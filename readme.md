@@ -1,16 +1,10 @@
 # neo4j to Cosmos DB
 
-I have recently been enamored with the both the simplicity and complexity of Graph databases.
-
-In May, at Build, Microsoft announced Cosmos DB with as the first "globally-distributed, multi-model database service." Upon exploring what that really meant, I found that one of the models they chose to natively support was Gremlin (graph) API. This was cool and got me really excited.
-
-One of the best ways I have learned to understand a new technology is to take what I already know and try to apply it to the new shiny thing. This meant taking what I knew of neo4j and applying it to the Cosmos DB. The only thing stopping me was I needed data.
-
-The genesis of this project was to solve my problem and copy all of the data from my neo4j to Cosmos DB with the least amount of work possible...and also give me a way to do an "Apples to Apples" comparison.
+This application will take a neo4j database and copy the contents in full to a Azure Cosmos DB database using the Graph (gremlin) API.
 
 ## So where to get started
 
-If you want to get started with this project, the first thing you will need is a neo4j database. One quick way to get a hold of one is to use the developer's best friend...Docker!
+If you want to get started with this project, the first thing you will need is a neo4j database. Docker is a quick way to get started!
 
 Assuming you are on Windows, make sure you have Hyper-V configured, and install [Docker for Windows](https://docs.docker.com/docker-for-windows/)
 
@@ -22,7 +16,7 @@ docker run --publish=7474:7474 --publish=7687:7687 --volume=$HOME/neo4j/data:/da
 
 If you don't already have the neo4j image loaded, it will automatically download to your computer. Then, Docker will start up the image and set up both the neo4j bolt on port 7687 and the neo4j browser on port 7474. Finally, it will store all of the data in your user home directory under neo4j/data. This way, your data will survive container reboots.
 
-Next, point your browser over to http://localhost:7474 to spin up the data browser for neo4j. The initial login/password will be "neo4j/neo4j" and you will have to change the password. Remember this password, you will need it again in a little bit. You could spend some time learning about Graph databases, but we want data...so fire up the code. Start one of the code walkthroughs to load up some data.
+Next, point your browser over to http://localhost:7474 to spin up the data browser for neo4j. The initial login/password will be "neo4j/neo4j" and you will have to change the password. This password will go in the configuration later. Start one of the code walkthroughs to load up some data.
 
 ```
 :play write-code
@@ -39,11 +33,9 @@ or
 ```
 Walkthrough enough to completely load the data. Be careful...the last step of the movie-graph will have you deleting all your new data.
 
-Either way...you are now ready to load up your Cosmos DB with some good Graph data.
-
 ## Get Your Cosmos DB ready
 
-Don't want to rewrite the internet here, so head on over to the Azure Cosmos DB documentation and follow the directions to "Create a Database Account".
+If you don't have a Cosmos DB set up yet, head over to the Azure Cosmos DB documentation and follow the directions to "Create a Database Account".
 
 https://docs.microsoft.com/en-us/azure/cosmos-db/create-graph-dotnet
 
