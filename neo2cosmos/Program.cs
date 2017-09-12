@@ -7,6 +7,7 @@ using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents.Linq;
 using Microsoft.Azure.Graphs;
 using Neo4j.Driver.V1;
+using System.Diagnostics;
 
 namespace neo2cosmos
 {
@@ -39,53 +40,61 @@ namespace neo2cosmos
         public async Task RunAsync(DocumentClient client)
         {
             Database database = await client.CreateDatabaseIfNotExistsAsync(new Database { Id = "graphdb" });
+            await client.DeleteDocumentCollectionAsync(UriFactory.CreateDocumentCollectionUri("graphdb", "Northwind"));
             DocumentCollection graph = await client.CreateDocumentCollectionIfNotExistsAsync(
                 UriFactory.CreateDatabaseUri("graphdb"),
                 new DocumentCollection { Id = "Northwind" },
                 new RequestOptions { OfferThroughput = 400 });
 
-            await client.OpenAsync();
-            await CleanupFromLastExecute(client, graph);
             await CreateVertexes(client, graph);
             await CreateEdges(client, graph);
         }
 
-        private async Task CleanupFromLastExecute(DocumentClient client, DocumentCollection graph)
-        {
-            IDocumentQuery<dynamic> cleanup = client.CreateGremlinQuery<dynamic>(graph, "g.V().drop()");
-            await cleanup.ExecuteNextAsync();
-        }
-
         private async Task CreateVertexes(DocumentClient client, DocumentCollection graph)
         {
-            foreach (var item in ReadNeoVertexes())
-            {
-                string gremlinVertex = ConvertItemToGremlinVertex(item);
-                Console.WriteLine(gremlinVertex);
-                IDocumentQuery<dynamic> query = client.CreateGremlinQuery<dynamic>(graph, gremlinVertex);
-                while (query.HasMoreResults)
-                {
-                    await query.ExecuteNextAsync();
-                }
-
-                Console.WriteLine();
-            }
-
+            var tasks = new List<Task<FeedResponse<dynamic>>>();
+            var s = new Stopwatch();
+            s.Start();
+            await Task.Run(() =>
+                Parallel.ForEach(ReadNeoVertexes(), new ParallelOptions { MaxDegreeOfParallelism = 4 }, item => {
+                    string gremlinVertex = ConvertItemToGremlinVertex(item);
+                    Console.WriteLine(gremlinVertex);
+                    IDocumentQuery<dynamic> query = client.CreateGremlinQuery<dynamic>(graph, gremlinVertex);
+                    while (query.HasMoreResults)
+                    {
+                        var sw = new Stopwatch();
+                        sw.Start();
+                        query.ExecuteNextAsync().Wait();
+                        Console.WriteLine($"Vertex created in: {s.ElapsedMilliseconds} ms");
+                    }
+                    Console.WriteLine();
+                })
+            );
+            Console.WriteLine($"Total Time: {s.ElapsedMilliseconds} ms");
         }
 
         private async Task CreateEdges(DocumentClient client, DocumentCollection graph)
         {
-            foreach (var item in ReadNeoEdges())
-            {
-                string gremlinEdge = ConvertItemToGremlinEdge(item);
-                Console.WriteLine(gremlinEdge);
-                IDocumentQuery<dynamic> query = client.CreateGremlinQuery<dynamic>(graph, gremlinEdge);
-                while (query.HasMoreResults)
-                {
-                    await query.ExecuteNextAsync();
-                }
-                Console.WriteLine();
-            }
+            var tasks = new List<Task<FeedResponse<dynamic>>>();
+            var s = new Stopwatch();
+            s.Start();
+            await Task.Run(() =>
+                Parallel.ForEach(ReadNeoEdges(), new ParallelOptions { MaxDegreeOfParallelism = 4 }, item => {
+                    string gremlinEdge = ConvertItemToGremlinEdge(item);
+                    Console.WriteLine(gremlinEdge);
+                    IDocumentQuery<dynamic> query = client.CreateGremlinQuery<dynamic>(graph, gremlinEdge);
+                    while (query.HasMoreResults)
+                    {
+                        var sw = new Stopwatch();
+                        sw.Start();
+                        query.ExecuteNextAsync().Wait();
+                        Console.WriteLine($"Vertex created in: {s.ElapsedMilliseconds} ms");
+                    }
+                    Console.WriteLine();
+                })
+            );
+            Console.WriteLine($"Total Time: {s.ElapsedMilliseconds} ms");
+
         }
 
         private List<INode> ReadNeoVertexes()
@@ -94,7 +103,7 @@ namespace neo2cosmos
             Config noSSL = new Config();
             noSSL.EncryptionLevel = EncryptionLevel.None;
 
-            using (var driver = GraphDatabase.Driver(NeoBolt, AuthTokens.Basic(NeoUser, NeoPass), noSSL))
+            using (var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "gremlin"), noSSL))
             using (var session = driver.Session())
             {
                 var result = session.Run("MATCH (n) RETURN n");
@@ -112,7 +121,7 @@ namespace neo2cosmos
             Config noSSL = new Config();
             noSSL.EncryptionLevel = EncryptionLevel.None;
 
-            using (var driver = GraphDatabase.Driver(NeoBolt, AuthTokens.Basic(NeoUser, NeoPass), noSSL))
+            using (var driver = GraphDatabase.Driver("bolt://localhost:7687", AuthTokens.Basic("neo4j", "gremlin"), noSSL))
             using (var session = driver.Session())
             {
                 var result = session.Run("MATCH (a)-[r]->(b) RETURN r");
@@ -150,4 +159,5 @@ namespace neo2cosmos
         }
 
     }
+
 }
