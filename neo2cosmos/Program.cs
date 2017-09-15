@@ -90,7 +90,7 @@ namespace neo2cosmos
                         var sw = new Stopwatch();
                         sw.Start();
                         query.ExecuteNextAsync().Wait();
-                        Console.WriteLine($"Vertex created in: {s.ElapsedMilliseconds} ms");
+                        Console.WriteLine($"Vertex created in: {sw.ElapsedMilliseconds} ms");
                     }
                     Console.WriteLine();
                 })
@@ -113,7 +113,7 @@ namespace neo2cosmos
                         var sw = new Stopwatch();
                         sw.Start();
                         query.ExecuteNextAsync().Wait();
-                        Console.WriteLine($"Vertex created in: {s.ElapsedMilliseconds} ms");
+                        Console.WriteLine($"Vertex created in: {sw.ElapsedMilliseconds} ms");
                     }
                     Console.WriteLine();
                 })
