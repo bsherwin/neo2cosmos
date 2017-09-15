@@ -14,8 +14,8 @@ namespace neo2cosmos
 {
     public class Program
     {
-        private const string DatabaseId = "graphdb";
-        private const string CollectionId = "Northwind";
+        private static string _databaseId;
+        private static string _collectionId;
 
         private static string _cosmosEndpoint;
         private static string _cosmosAuthKey;
@@ -40,6 +40,9 @@ namespace neo2cosmos
 
         private static void LoadConfiguration()
         {
+            _databaseId = ConfigurationManager.AppSettings["DatabaseId"];
+            _collectionId = ConfigurationManager.AppSettings["CollectionId"];
+
             _cosmosEndpoint = ConfigurationManager.AppSettings["CosmosEndpoint"];
             _cosmosAuthKey = ConfigurationManager.AppSettings["CosmosAuthKey"];
 
@@ -50,12 +53,12 @@ namespace neo2cosmos
 
         public async Task RunAsync(DocumentClient client)
         {
-            await client.CreateDatabaseIfNotExistsAsync(new Database {Id = DatabaseId});
+            await client.CreateDatabaseIfNotExistsAsync(new Database {Id = _databaseId});
 
             try
             {
                 await client.DeleteDocumentCollectionAsync(
-                    UriFactory.CreateDocumentCollectionUri(DatabaseId, CollectionId));
+                    UriFactory.CreateDocumentCollectionUri(_databaseId, _collectionId));
             }
             catch (DocumentClientException e)
             {
@@ -64,8 +67,8 @@ namespace neo2cosmos
             }
 
             var graph = await client.CreateDocumentCollectionIfNotExistsAsync(
-                UriFactory.CreateDatabaseUri(DatabaseId),
-                new DocumentCollection {Id = CollectionId},
+                UriFactory.CreateDatabaseUri(_databaseId),
+                new DocumentCollection {Id = _collectionId },
                 new RequestOptions {OfferThroughput = 400});
 
             await CreateVertexes(client, graph);
